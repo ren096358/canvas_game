@@ -1,0 +1,348 @@
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<script>
+			function gameStart() {
+				var game;
+				var stairs = 0;
+				var startButton = document.getElementById("startButton");
+				var hpDiv = document.getElementById("hpDiv");
+				var stairsDiv = document.getElementById("stairsDiv");
+				startButton.style.display = "none";
+				hpDiv.style.display = "";
+				stairsDiv.style.display = "";
+				stairsDiv.innerHTML = "地下" + 0 + "階";
+
+
+				var canvas = document.getElementById("myCanvas");
+				var ctx = canvas.getContext("2d");
+
+				var normalBar = new Image();
+				normalBar.src = "./image/normalBar.png";
+				var badBar = new Image();
+				badBar.src = "./image/badBar.png";
+				var jumpBar = new Image();
+				jumpBar.src = "./image/jumpBar.png";
+				var brokeBar = new Image();
+				brokeBar.src = "./image/brokeBar.png";
+				var topBar = new Image();
+				topBar.src = "./image/topBar.png";
+
+
+				var normalBoy = new Image();
+				normalBoy.src = "./image/normalBoy.png";
+				var fallingBoy = new Image();
+				fallingBoy.src = "./image/fallingBoy.png";
+				var rightBoy = new Image();
+				rightBoy.src = "./image/rightBoy.png";
+				var leftBoy = new Image();
+				leftBoy.src = "./image/leftBoy.png";
+
+				var dx = 1;
+				var dy = 1;
+				var collision = false;
+
+				var barArray = new Array();
+				var barX;
+				var barY = canvas.height;
+				var barWidth = 100;
+				var barHeight;
+				var barType;
+				var createBarTime = 1;
+				var brokeTime = 0;
+				var jumpTime = 0;
+
+				var topBarX = 0;
+				var topBarY = 0;
+				var topBarHeight = 20;
+				var topBarWidth = canvas.width;
+
+				var boy;
+				var boyX;
+				var boyY = canvas.height / 2;
+				var boyWidth = 25;
+				var boyHeight = 25;
+				var boyStatus = "normalBoy";
+				var boyHurt = false;
+				var boyHp = 1000;
+
+				document.addEventListener("keydown", doKeyDown, false);
+				document.addEventListener("keyup", doKeyUp, false);
+
+				function Bar(barX, barY, barWidth, barHeight, barType) {
+					this.barX = barX;
+					this.barY = barY;
+					this.barWidth = barWidth;
+					this.barHeight = barHeight;
+					this.barType = barType;
+				}
+
+				function Boy(boyX, boyY, boyWidth, boyHeight, boyStatus, boyHurt, boyHp) {
+					this.boyX = boyX;
+					this.boyY = boyY;
+					this.boyWidth = boyWidth;
+					this.boyHeight = boyHeight;
+					this.boyStatus = boyStatus;
+					this.boyHurt = boyHurt;
+					this.boyHp = boyHp;
+				}
+
+				function createBar() {
+					barX = Math.floor(Math.random() * (canvas.width - barWidth));
+					barHeight = 20;
+					switch (Math.floor(Math.random() * 4 + 1)) {
+						case 1:
+							barType = "normalBar";
+							break;
+						case 2:
+							barType = "badBar";
+							barHeight = 30;
+							break;
+						case 3:
+							barType = "jumpBar";
+							break;
+						case 4:
+							barType = "brokeBar";
+							break;
+					}
+					barArray.push(new Bar(barX, barY, barWidth, barHeight, barType));
+				}
+
+				function createBoy() {
+					boyX = (barX + (barWidth / 2) - (boyWidth / 2));
+					boy = new Boy(boyX, boyY, boyWidth, boyHeight, boyStatus, boyHurt, boyHp);
+				}
+
+
+				(normalBar && badBar && topBar && normalBoy).onload = function () {
+					createBar();
+					createBoy();
+					game = setInterval(draw, 10);
+				}
+
+				function clear() {
+					ctx.clearRect(0, 0, canvas.width, canvas.height);
+				}
+
+				function draw() {
+					clear();
+					if (boy.boyHurt == true) {
+						ctx.fillStyle = "#FF0000";
+						ctx.fillRect(0, 0, canvas.width, canvas.height);
+						boy.boyHurt = false;
+					}
+
+					barArray.forEach(function (bar) {
+						switch (bar.barType) {
+							case "normalBar":
+								ctx.drawImage(normalBar, bar.barX, bar.barY, bar.barWidth, bar.barHeight);
+								break;
+							case "badBar":
+								ctx.drawImage(badBar, bar.barX, bar.barY, bar.barWidth, bar.barHeight);
+								break;
+							case "jumpBar":
+								ctx.drawImage(jumpBar, bar.barX, bar.barY, bar.barWidth, bar.barHeight);
+								break;
+							case "brokeBar":
+								ctx.drawImage(brokeBar, bar.barX, bar.barY, bar.barWidth, bar.barHeight);
+								break;
+							default:
+								break;
+						}
+					});
+					switch (boy.boyStatus) {
+						case "normalBoy":
+							ctx.drawImage(normalBoy, boy.boyX, boy.boyY, boy.boyWidth, boy.boyHeight);
+							break;
+						case "fallingBoy":
+							ctx.drawImage(fallingBoy, boy.boyX, boy.boyY, boy.boyWidth, boy.boyHeight);
+							break;
+						case "rightBoy":
+							ctx.drawImage(rightBoy, boy.boyX, boy.boyY, boy.boyWidth, boy.boyHeight);
+							break;
+						case "leftBoy":
+							ctx.drawImage(leftBoy, boy.boyX, boy.boyY, boy.boyWidth, boy.boyHeight);
+							break;
+					}
+					ctx.drawImage(topBar, topBarX, topBarY, topBarWidth, topBarHeight);
+
+					animate();
+				}
+
+				function checkCollision() {
+					if (boy.boyY + boy.boyHeight / 2 <= topBarHeight / 2) {
+						collision = "top";
+						return;
+					}
+					barArray.every(function (bar) {
+						switch (bar.barType) {
+							case "normalBar":
+								if ((boy.boyY + boy.boyHeight == bar.barY) && (boy.boyX + boy.boyWidth > bar.barX) && (boy.boyX < bar.barX + bar.barWidth)) {
+									collision = "normal";
+									return false;
+								}
+								break;
+							case "badBar":
+								if ((boy.boyY + boy.boyHeight == bar.barY + bar.barHeight / 2) && (boy.boyX + boy.boyWidth > bar.barX) && (boy.boyX < bar.barX + bar.barWidth)) {
+									collision = "bad";
+									return false;
+								}
+								break;
+							case "jumpBar":
+								if ((boy.boyY + boy.boyHeight == bar.barY) && (boy.boyX + boy.boyWidth > bar.barX) && (boy.boyX < bar.barX + bar.barWidth)) {
+									collision = "jump";
+									return false;
+								}
+								break;
+							case "brokeBar":
+								if ((boy.boyY + boy.boyHeight == bar.barY) && (boy.boyX + boy.boyWidth > bar.barX) && (boy.boyX < bar.barX + bar.barWidth)) {
+									//計算brokeBar消失的時間
+									if (collision = "broke") {
+										brokeTime++;
+										if (brokeTime > 100) {
+											bar.barType = false;
+											collision = false;
+											brokeTime = 0;
+										}
+										return false;
+									}
+									collision = "broke";
+									return false;
+								}
+								break;
+						}
+						collision = false;
+						return true;
+					});
+				}
+
+				function animate() {
+					checkCollision();
+					calculateHp();
+					calculateStairs();
+
+					barArray.forEach(function (bar) {
+						bar.barY = bar.barY - dy;
+						if (bar.barY + barHeight < 0) {
+							delete bar;
+						}
+					});
+					createBarTime++;
+					if (createBarTime == 100) {
+						createBar();
+						createBarTime = 1;
+					}
+
+					switch (collision) {
+						case "top":
+							boy.boyStatus = "fallingBoy";
+							boy.boyY = boy.boyY + 50;
+							boy.boyHurt = true;
+							break;
+						case "normal":
+							boy.boyStatus = "normalBoy";
+							boy.boyY = boy.boyY - dy;
+							break;
+						case "bad":
+							boy.boyStatus = "normalBoy";
+							boy.boyY = boy.boyY - dy;
+							boy.boyHurt = true;
+							break;
+						case "jump":
+							boy.boyStatus = "normalBoy";
+							boy.boyY = boy.boyY - (dy * 100);
+							break;
+						case "broke":
+							boy.boyStatus = "normalBoy";
+							boy.boyY = boy.boyY - dy;
+							break;
+						default:
+							boy.boyStatus = "fallingBoy";
+							boy.boyY = boy.boyY + (dy * 2);
+							break;
+					}
+				}
+
+				function doKeyDown(evt) {
+					switch (evt.keyCode) {
+						case 37: //左
+							boy.boyStatus = "leftBoy";
+							boy.boyX = boy.boyX - (dx * 10);
+							if (boy.boyX < 0)
+								boy.boyX = 0;
+							break;
+						case 39: //右
+							boy.boyStatus = "rightBoy";
+							boy.boyX = boy.boyX + (dx * 10);
+							if (boy.boyX + boy.boyWidth > canvas.width)
+								boy.boyX = canvas.width - boy.boyWidth;
+							break;
+					}
+				}
+
+				function doKeyUp(evt) {
+					boy.boyStatus = "normalBoy";
+				}
+
+				function calculateHp() {
+					switch (collision) {
+						case "top":
+							boy.boyHp = boy.boyHp - 100;
+							hpDiv.style.color = "red";
+							break;
+						case "normal":
+							boy.boyHp = boy.boyHp + 1;
+							hpDiv.style.color = "black";
+							break;
+						case "bad":
+							boy.boyHp = boy.boyHp - 2;
+							hpDiv.style.color = "red";
+							break;
+						case "jump":
+							boy.boyHp = boy.boyHp + 20;
+							hpDiv.style.color = "black";
+							break;
+						default:
+							hpDiv.style.color = "black";
+							break;
+					}
+					if (boy.boyHp >= 1000) {
+						boy.boyHp = 1000;
+					}
+					if (boy.boyY >= canvas.height || boy.boyHp <= 0) {
+						boy.boyHp = 0;
+						gameOver();
+					}
+					hpDiv.innerHTML = "HP:" + boy.boyHp;
+				}
+				function calculateStairs() {
+					stairs++;
+					if (stairs % 100 == 0) {
+						stairsDiv.innerHTML = "地下" + stairs / 100 + "階";
+					}
+				}
+
+				function gameOver() {
+					clear();
+					clearInterval(game);
+					startButton.style.display = "";
+					hpDiv.style.display = "none";
+					stairsDiv.style.display = "none";
+					alert("GAME OVER");
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<canvas id="myCanvas" width="500" height="500" style="border:1px solid #000000;">
+		</canvas>
+		<div id="startButton">
+			<input type="button" value="start" onclick="gameStart()">
+		</div>
+		<div id="hpDiv">
+		</div>
+		<div id="stairsDiv">
+		</div>
+	</body>
+</html>
